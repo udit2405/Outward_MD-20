@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MD-20 | Rack & QTY Lookup</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>
+    :root {
+      --red:       #E8000D;
+      --red-dark:  #b5000a;
+      --red-soft:  rgba(232,0,13,.07);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 18px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #fff;
+      border-bottom: 3px solid var(--red);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 16px rgba(0,0,0,.06);
+      position: relative;
+    }
+    .vip-logo { height: 52px; width: auto; flex-shrink: 0; }
+    .header-divider { width: 1px; height: 28px; background: #ebebeb; }
+    header h1 {
+      position: absolute; left: 0; right: 0;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #111;
+      letter-spacing: -0.1px;
+      pointer-events: none;
+    }
+    header span {
+      font-size: 0.76rem;
+      color: #b0b5c0;
+      margin-left: auto;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 860px; margin: 28px auto; padding: 0 20px; }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(0,0,0,.04);
+      transition: box-shadow .25s, transform .25s;
+    }
+    .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+    .card label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: var(--red);
+      margin-bottom: 13px;
+    }
+
+    /* ── Step badge ── */
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.65rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 2px dashed #dde0e8;
+      border-radius: 10px;
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .25s;
+      position: relative;
+      background: #fafbfc;
+    }
+    .upload-zone:hover { border-color: var(--red); background: var(--red-soft); transform: translateY(-1px); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+    .upload-zone p { font-size: 0.83rem; color: #999; line-height: 1.5; }
+    .upload-zone p strong { color: var(--red); font-weight: 600; }
+    .upload-zone.loaded { border-color: #22c55e; background: #f0fdf4; border-style: solid; }
+    .upload-zone.loaded p { color: #166534; }
+
+    /* ── Search input ── */
+    .search-input-wrap {
+      position: relative;
+    }
+    input[type="text"] {
+      width: 100%;
+      border: 1.5px solid #e2e5ed;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 0.92rem;
+      font-family: 'Inter', sans-serif;
+      transition: border-color .2s, box-shadow .2s;
+      background: #fafbfc;
+      color: #1a1a1a;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(232,0,13,.08);
+      background: #fff;
+    }
+    input[type="text"]::placeholder { color: #c4c8d4; }
+    .hint { font-size: 0.72rem; color: #b8bcc8; margin-top: 7px; }
+
+    /* ── Action row ── */
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    button#searchBtn {
+      background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 32px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      box-shadow: 0 4px 14px rgba(232,0,13,.32);
+      transition: all .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    button#searchBtn:hover { box-shadow: 0 6px 22px rgba(232,0,13,.44); transform: translateY(-1px); }
+    button#searchBtn:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(232,0,13,.28); }
+
+    button#clearBtn {
+      background: #fff;
+      border: 1.5px solid #e2e5ed;
+      border-radius: 10px;
+      padding: 12px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #777;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    button#clearBtn:hover { border-color: #bbb; color: #333; background: #f8f9fb; }
+
+    #statusMsg { font-size: 0.81rem; color: #aaa; margin-left: auto; font-weight: 500; }
+
+    /* ── Results card ── */
+    .results-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.04);
+    }
+
+    .results-header {
+      padding: 13px 22px;
+      border-bottom: 1px solid #f0f1f4;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f8f9fb;
+    }
+    .results-header h2 {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: #999;
+    }
+    .results-header .searched-term {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--red);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    #copyBtn {
+      background: #fff;
+      border: 1.5px solid #e2e5ed;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+      transition: all .2s;
+      margin-left: auto;
+      font-family: 'Inter', sans-serif;
+    }
+    #copyBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+    #copyBtn.copied { border-color: #22c55e; color: #166534; background: #f0fdf4; }
+
+    .badge {
+      background: var(--red);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 3px 12px;
+      letter-spacing: 0.3px;
+    }
+    .badge.zero { background: #ef4444; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+
+    thead tr { background: #f8f9fb; }
+    thead th {
+      text-align: left;
+      padding: 11px 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #aaa;
+      border-bottom: 1px solid #eeeff3;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f8f9fb;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f3f4f6;
+      transition: background .12s;
+      animation: rowIn .18s ease both;
+    }
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    tbody tr:hover { background: #fff5f5 !important; }
+    tbody tr:last-child { border-bottom: none; }
+
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    tbody td { padding: 12px 20px; vertical-align: middle; }
+
+    td.rank { color: #d4d8e2; font-size: 0.72rem; width: 36px; text-align: right; padding-right: 8px; font-weight: 500; }
+    td.rack { font-weight: 700; color: #111; font-size: 0.9rem; }
+    td.desc { color: #555; font-size: 0.82rem; }
+
+    /* QTY chip */
+    .qty-chip {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      min-width: 52px;
+      text-align: center;
+    }
+    .qty-high  { background: #dcfce7; color: #15803d; }
+    .qty-med   { background: #fef9c3; color: #854d0e; }
+    .qty-low   { background: #fee2e2; color: #b91c1c; }
+
+    /* ── Empty state ── */
+    #emptyState {
+      text-align: center;
+      padding: 52px 20px;
+      color: #bbb;
+    }
+    #emptyState .empty-icon { font-size: 2.6rem; margin-bottom: 12px; }
+    #emptyState p { font-size: 0.88rem; }
+
+    /* ── Not found ── */
+    .not-found-row td {
+      color: #f87171;
+      font-style: italic;
+      background: #fff8f8 !important;
+      font-size: 0.83rem;
+    }
+
+    /* ── Brand strip ── */
+    .brand-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 14px 24px;
+      background: #fff;
+      border-top: 1px solid #f0f1f4;
+      margin-top: 36px;
+    }
+    .brand-strip img { height: 28px; width: auto; filter: grayscale(40%); opacity: .75; transition: all .2s; }
+    .brand-strip img:hover { filter: grayscale(0); opacity: 1; }
+
+    /* ── Footer ── */
+    footer { background: #1a1a1a; color: #ccc; padding: 0; margin-top: 0; }
+    .foot-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 32px;
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .foot-brand { display: flex; align-items: center; gap: 14px; }
+    .foot-brand img { height: 40px; width: auto; filter: brightness(0) invert(1); opacity: .6; }
+    .foot-brand-text .title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .foot-brand-text .sub { font-size: 0.72rem; color: #888; }
+    .foot-author .name { font-size: 0.9rem; font-weight: 700; color: #fff; }
+    .foot-author .role { font-size: 0.75rem; color: #888; margin-bottom: 10px; }
+    .foot-author .contact-label { font-size: 0.72rem; color: #777; margin-bottom: 3px; }
+    .foot-author a { font-size: 0.8rem; color: var(--red); text-decoration: none; }
+    .foot-author a:hover { text-decoration: underline; }
+    .foot-bottom {
+      border-top: 1px solid #333;
+      padding: 12px 32px;
+      font-size: 0.72rem;
+      color: #555;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <img class="vip-logo" src="https://udit2405.github.io/vipp/vip%20back%20logo.png" alt="VIP Industries">
+  <div class="header-divider"></div>
+  <h1>MD-20 &nbsp;·&nbsp; Rack &amp; QTY Lookup</h1>
+  <span>Phase 1 &nbsp;·&nbsp; Internal Tool</span>
+</header>
+
+<!-- ── Main ── -->
+<div class="container">
+
+  <!-- Step 1 + Step 2 side by side -->
+  <div class="controls">
+
+    <!-- Step 1: Upload -->
+    <div class="card">
+      <label><span class="step-badge">1</span> Upload Excel File</label>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <div class="icon">📂</div>
+        <p><strong>Click to upload</strong> or drag &amp; drop<br>Supports .xlsx / .xls</p>
+      </div>
+    </div>
+
+    <!-- Step 2: Search -->
+    <div class="card">
+      <label><span class="step-badge">2</span> Enter SKU or Material Description</label>
+      <div class="search-input-wrap">
+        <input
+          type="text"
+          id="queryInput"
+          placeholder="e.g. AIRSTN63TBL  or  SKYBAGS THE TRUNK…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <p class="hint">Enter a single SKU code (col D) or any part of the Material Description (col E)</p>
+    </div>
+
+  </div>
+
+  <!-- Action row -->
+  <div class="search-row">
+    <button id="searchBtn">🔍 &nbsp;Give Result</button>
+    <button id="clearBtn">✕ &nbsp;Clear</button>
+    <span id="statusMsg"></span>
+  </div>
+
+  <!-- Results -->
+  <div class="results-card">
+    <div class="results-header">
+      <h2>Results</h2>
+      <span id="searchedTerm" class="searched-term" style="display:none"></span>
+      <span class="badge" id="countBadge" style="display:none"></span>
+      <button id="copyBtn" style="display:none">⎘ &nbsp;Copy</button>
+    </div>
+
+    <div id="emptyState">
+      <div class="empty-icon">🏷️</div>
+      <p>Upload a file and enter a SKU or Material Description to see rack locations and quantities.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultsTable" style="display:none">
+        <thead>
+          <tr>
+            <th class="rank" style="width:36px">#</th>
+            <th>Rack</th>
+            <th>Material Description</th>
+            <th>SKU</th>
+            <th>QTY</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Brand strip -->
+<div class="brand-strip">
+  <img src="https://vipindustries.co.in/storage/brands/December2022/9OxX7NVPsq2KzgGq3bzl.webp" alt="Aristocrat">
+  <img src="https://vipindustries.co.in/storage/brands/December2022/VGjRTemVx2KDgiTgPpb8.webp" alt="Alfa">
+  <img src="https://vipindustries.co.in/storage/brands/December2022/3u24WIkhsnUWZiR2FZ04.webp" alt="Caprese">
+  <img src="https://vipindustries.co.in/storage/brands/June2026/logo.webp" alt="VIP">
+  <img src="https://vipindustries.co.in/storage/brands/December2022/3QyOW93gOrVMFkjAiBV0.webp" alt="Skybags">
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <img src="https://udit2405.github.io/vipp/vip%20back%20logo.png" alt="VIP Industries">
+      <div class="foot-brand-text">
+        <div class="title">VIP Industries</div>
+        <span class="sub">MD-20 &nbsp;·&nbsp; Phase 1</span>
+      </div>
+    </div>
+    <div class="foot-author">
+      <div class="name">Udit Sahai</div>
+      <div class="role">Management Trainee 2026</div>
+      <div class="contact-label">For queries or assistance, contact:</div>
+      <a href="mailto:udit.sahai@vipbags.com">udit.sahai@vipbags.com</a>
+    </div>
+  </div>
+  <div class="foot-bottom">© 2026 VIP Industries &nbsp;·&nbsp; Internal Use Only &nbsp;·&nbsp; Rack &amp; QTY Lookup — MD-20 Phase 1</div>
+</footer>
+
+<script>
+  /* ─── State ─── */
+  let allRows = [];   // parsed from excel: [{rack, sku, desc, qty}]
+
+  /* ─── File upload ─── */
+  document.getElementById('fileInput').addEventListener('change', function () {
+    const file = this.files[0];
+    if (file) loadExcel(file);
+  });
+
+  function loadExcel(file) {
+    const zone = document.getElementById('uploadZone');
+    zone.querySelector('p').innerHTML = '⏳ Reading file…';
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+
+        // Try "Summary" sheet first, else fall back to first sheet
+        const sheetName = wb.SheetNames.includes('Summary') ? 'Summary' : wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        // Find the header row (look for a row that has "RACK" and "SKU")
+        let headerIdx = -1;
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+          const r = rows[i].map(c => String(c).trim().toUpperCase());
+          if (r.includes('RACK') && (r.includes('SKU') || r.includes('SKU/EAN'))) {
+            headerIdx = i;
+            break;
+          }
+        }
+        if (headerIdx === -1) {
+          zone.querySelector('p').innerHTML = '❌ Could not find header row (need RACK + SKU columns)';
+          return;
+        }
+
+        const headers = rows[headerIdx].map(c => String(c).trim().toUpperCase());
+        const colRack = headers.indexOf('RACK');
+        const colSku  = headers.findIndex(h => h === 'SKU' || h === 'SKU/EAN');
+        const colDesc = headers.findIndex(h => h.includes('MATERIAL') || h.includes('DESCRIPTION') || h === 'MATERIAL DESCRIPTION');
+        const colQty  = headers.indexOf('QTY');
+
+        if (colRack < 0 || colSku < 0 || colQty < 0) {
+          zone.querySelector('p').innerHTML = '❌ Missing expected columns (RACK / SKU / QTY)';
+          return;
+        }
+
+        // Parse data rows
+        allRows = [];
+        for (let i = headerIdx + 1; i < rows.length; i++) {
+          const row = rows[i];
+          const rack = String(row[colRack] || '').trim();
+          const sku  = String(row[colSku]  || '').trim();
+          const desc = colDesc >= 0 ? String(row[colDesc] || '').trim() : '';
+          const qty  = parseFloat(row[colQty]) || 0;
+          if (rack && sku) {
+            allRows.push({ rack, sku, desc, qty });
+          }
+        }
+
+        zone.querySelector('p').innerHTML =
+          `✅ <strong>${file.name}</strong><br>${allRows.length.toLocaleString()} rows loaded from "${sheetName}"`;
+        zone.classList.add('loaded');
+        document.getElementById('statusMsg').textContent = `${allRows.length.toLocaleString()} rows ready`;
+      } catch (err) {
+        zone.querySelector('p').innerHTML = '❌ Error reading file: ' + err.message;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /* ─── Search ─── */
+  document.getElementById('searchBtn').addEventListener('click', runSearch);
+  document.getElementById('queryInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') runSearch();
+  });
+
+  function runSearch() {
+    const query = document.getElementById('queryInput').value.trim();
+    const statusMsg = document.getElementById('statusMsg');
+
+    if (!allRows.length) {
+      statusMsg.textContent = '⚠️ Please upload an Excel file first.';
+      return;
+    }
+    if (!query) {
+      statusMsg.textContent = '⚠️ Please enter a SKU or Material Description.';
+      return;
+    }
+
+    const q = query.toUpperCase();
+
+    // Match by exact SKU (case-insensitive) OR partial Material Description match
+    const matches = allRows.filter(r =>
+      r.sku.toUpperCase() === q ||
+      r.desc.toUpperCase().includes(q)
+    );
+
+    // Sort by QTY descending (max → min)
+    matches.sort((a, b) => b.qty - a.qty);
+
+    renderTable(matches, query);
+  }
+
+  /* ─── Render ─── */
+  function renderTable(matches, query) {
+    const tbody      = document.getElementById('resultsBody');
+    const table      = document.getElementById('resultsTable');
+    const emptyState = document.getElementById('emptyState');
+    const badge      = document.getElementById('countBadge');
+    const termEl     = document.getElementById('searchedTerm');
+
+    tbody.innerHTML = '';
+
+    termEl.textContent = '"' + query + '"';
+    termEl.style.display = 'inline';
+
+    if (!matches.length) {
+      table.style.display = 'none';
+      emptyState.style.display = 'block';
+      emptyState.querySelector('p').textContent = 'No results found for "' + query + '". Try a different SKU or description.';
+      badge.style.display = 'none';
+      document.getElementById('copyBtn').style.display = 'none';
+      document.getElementById('statusMsg').textContent = 'No match found.';
+      return;
+    }
+
+    // Max qty for chip coloring reference
+    const maxQty = matches[0].qty;
+
+    matches.forEach((item, i) => {
+      const tr = document.createElement('tr');
+      tr.style.animationDelay = (i * 16) + 'ms';
+
+      const qtyRatio = maxQty > 0 ? item.qty / maxQty : 0;
+      const qtyClass = qtyRatio >= 0.6 ? 'qty-high'
+                     : qtyRatio >= 0.25 ? 'qty-med'
+                     : 'qty-low';
+
+      tr.innerHTML = `
+        <td class="rank">${i + 1}</td>
+        <td class="rack">${esc(item.rack)}</td>
+        <td class="desc">${esc(item.desc)}</td>
+        <td style="font-family:'SF Mono','Fira Code',monospace;color:var(--red);font-size:0.82rem;font-weight:600">${esc(item.sku)}</td>
+        <td><span class="qty-chip ${qtyClass}">${item.qty}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    emptyState.style.display = 'none';
+    table.style.display = 'table';
+
+    badge.style.display = 'inline-block';
+    badge.textContent = `${matches.length} rack${matches.length !== 1 ? 's' : ''} found`;
+    badge.className = 'badge';
+
+    document.getElementById('copyBtn').style.display = 'inline-block';
+    document.getElementById('statusMsg').textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''} · sorted by QTY ↓`;
+  }
+
+  /* ─── Clear ─── */
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById('queryInput').value = '';
+    document.getElementById('resultsBody').innerHTML = '';
+    document.getElementById('resultsTable').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('emptyState').querySelector('p').textContent =
+      'Upload a file and enter a SKU or Material Description to see rack locations and quantities.';
+    document.getElementById('countBadge').style.display = 'none';
+    document.getElementById('copyBtn').style.display = 'none';
+    document.getElementById('searchedTerm').style.display = 'none';
+    document.getElementById('statusMsg').textContent = '';
+  });
+
+  /* ─── Copy ─── */
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const rows = document.querySelectorAll('#resultsBody tr');
+    if (!rows.length) return;
+    const lines = ['#\tRACK\tMATERIAL DESCRIPTION\tSKU\tQTY'];
+    rows.forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      lines.push([...cells].map(td => td.textContent.trim()).join('\t'));
+    });
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '⎘ Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  });
+
+  /* ─── Utility ─── */
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+</script>
+
+</body>
+</html>
