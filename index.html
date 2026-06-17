@@ -122,28 +122,28 @@
     .upload-zone.loaded { border-color: #22c55e; background: #f0fdf4; border-style: solid; }
     .upload-zone.loaded p { color: #166534; }
 
-    /* ── Search input ── */
-    .search-input-wrap {
-      position: relative;
-    }
-    input[type="text"] {
+    /* ── Search textarea ── */
+    textarea {
       width: 100%;
+      height: 108px;
       border: 1.5px solid #e2e5ed;
       border-radius: 10px;
       padding: 11px 14px;
-      font-size: 0.92rem;
-      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      resize: vertical;
       transition: border-color .2s, box-shadow .2s;
+      line-height: 1.7;
       background: #fafbfc;
       color: #1a1a1a;
     }
-    input[type="text"]:focus {
+    textarea:focus {
       outline: none;
       border-color: var(--red);
       box-shadow: 0 0 0 3px rgba(232,0,13,.08);
       background: #fff;
     }
-    input[type="text"]::placeholder { color: #c4c8d4; }
+    textarea::placeholder { color: #c4c8d4; }
     .hint { font-size: 0.72rem; color: #b8bcc8; margin-top: 7px; }
 
     /* ── Action row ── */
@@ -390,16 +390,12 @@
     <!-- Step 2: Search -->
     <div class="card">
       <label><span class="step-badge">2</span> Enter SKU or Material Description</label>
-      <div class="search-input-wrap">
-        <input
-          type="text"
-          id="queryInput"
-          placeholder="e.g. AIRSTN63TBL  or  SKYBAGS THE TRUNK…"
-          autocomplete="off"
-          spellcheck="false"
-        />
-      </div>
-      <p class="hint">Enter a single SKU code (col D) or any part of the Material Description (col E)</p>
+      <textarea
+        id="queryInput"
+        placeholder="AIRSTN63TBL&#10;THETRUMDGRN&#10;Or paste multiple SKUs separated by spaces or new lines…"
+        spellcheck="false"
+      ></textarea>
+      <p class="hint">One per line — or paste multiple SKUs/descriptions separated by spaces. Each word/line is treated as a separate lookup.</p>
     </div>
 
   </div>
@@ -547,35 +543,43 @@
 
   /* ─── Search ─── */
   document.getElementById('searchBtn').addEventListener('click', runSearch);
-  document.getElementById('queryInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') runSearch();
-  });
 
   function runSearch() {
-    const query = document.getElementById('queryInput').value.trim();
+    const raw = document.getElementById('queryInput').value;
     const statusMsg = document.getElementById('statusMsg');
 
     if (!allRows.length) {
       statusMsg.textContent = '⚠️ Please upload an Excel file first.';
       return;
     }
-    if (!query) {
+    if (!raw.trim()) {
       statusMsg.textContent = '⚠️ Please enter a SKU or Material Description.';
       return;
     }
 
-    const q = query.toUpperCase();
+    // Split on any whitespace (spaces, tabs, newlines) and drop empty tokens
+    const queries = raw.split(/\s+/).map(t => t.trim().toUpperCase()).filter(Boolean);
+    const uniqueQueries = [...new Set(queries)];
 
-    // Match by exact SKU (case-insensitive) OR partial Material Description match
-    const matches = allRows.filter(r =>
-      r.sku.toUpperCase() === q ||
-      r.desc.toUpperCase().includes(q)
-    );
+    // For each token: exact SKU match OR substring description match
+    // Collect all matches (deduplicate by rack+sku combination)
+    const seen = new Set();
+    const matches = [];
+    for (const q of uniqueQueries) {
+      for (const r of allRows) {
+        const key = r.rack + '|' + r.sku;
+        if (seen.has(key)) continue;
+        if (r.sku.toUpperCase() === q || r.desc.toUpperCase().includes(q)) {
+          seen.add(key);
+          matches.push(r);
+        }
+      }
+    }
 
     // Sort by QTY descending (max → min)
     matches.sort((a, b) => b.qty - a.qty);
 
-    renderTable(matches, query);
+    renderTable(matches, uniqueQueries.join(', '));
   }
 
   /* ─── Render ─── */
