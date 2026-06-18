@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MD-20 | Rack & QTY Lookup</title>
+  <title>MD-20 | Phase 1 &amp; 2 | Rack &amp; QTY Lookup</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
@@ -12,6 +12,10 @@
       --red:       #E8000D;
       --red-dark:  #b5000a;
       --red-soft:  rgba(232,0,13,.07);
+      --p1:        #2563eb;
+      --p1-soft:   rgba(37,99,235,.10);
+      --p2:        #d97706;
+      --p2-soft:   rgba(217,119,6,.10);
       --shadow-sm: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
       --shadow-md: 0 4px 18px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
       --shadow-lg: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.05);
@@ -56,14 +60,18 @@
     }
 
     /* ── Layout ── */
-    .container { max-width: 860px; margin: 28px auto; padding: 0 20px; }
+    .container { max-width: 1000px; margin: 28px auto; padding: 0 20px; }
 
-    .controls {
+    /* Upload row: two cards side by side */
+    .upload-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px;
       margin-bottom: 18px;
     }
+
+    /* Search card: full width */
+    .search-card { margin-bottom: 18px; }
 
     /* ── Cards ── */
     .card {
@@ -87,8 +95,10 @@
       color: var(--red);
       margin-bottom: 13px;
     }
+    .card.p1-card label { color: var(--p1); }
+    .card.p2-card label { color: var(--p2); }
 
-    /* ── Step badge ── */
+    /* ── Step / Phase badge ── */
     .step-badge {
       display: inline-flex;
       align-items: center;
@@ -102,12 +112,14 @@
       font-weight: 800;
       flex-shrink: 0;
     }
+    .p1-card .step-badge { background: var(--p1); }
+    .p2-card .step-badge { background: var(--p2); }
 
     /* ── Upload zone ── */
     .upload-zone {
       border: 2px dashed #dde0e8;
       border-radius: 10px;
-      padding: 22px 16px;
+      padding: 20px 14px;
       text-align: center;
       cursor: pointer;
       transition: all .25s;
@@ -115,17 +127,23 @@
       background: #fafbfc;
     }
     .upload-zone:hover { border-color: var(--red); background: var(--red-soft); transform: translateY(-1px); }
+    .p1-card .upload-zone:hover { border-color: var(--p1); background: var(--p1-soft); }
+    .p2-card .upload-zone:hover { border-color: var(--p2); background: var(--p2-soft); }
     .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
-    .upload-zone p { font-size: 0.83rem; color: #999; line-height: 1.5; }
+    .upload-zone .icon { font-size: 1.8rem; margin-bottom: 7px; }
+    .upload-zone p { font-size: 0.8rem; color: #999; line-height: 1.5; }
     .upload-zone p strong { color: var(--red); font-weight: 600; }
-    .upload-zone.loaded { border-color: #22c55e; background: #f0fdf4; border-style: solid; }
+    .p1-card .upload-zone p strong { color: var(--p1); }
+    .p2-card .upload-zone p strong { color: var(--p2); }
+    .upload-zone.loaded { border-style: solid; }
     .upload-zone.loaded p { color: #166534; }
+    .p1-card .upload-zone.loaded { border-color: var(--p1); background: #eff6ff; }
+    .p2-card .upload-zone.loaded { border-color: var(--p2); background: #fffbeb; }
 
     /* ── Search textarea ── */
     textarea {
       width: 100%;
-      height: 108px;
+      height: 90px;
       border: 1.5px solid #e2e5ed;
       border-radius: 10px;
       padding: 11px 14px;
@@ -243,7 +261,19 @@
       padding: 3px 12px;
       letter-spacing: 0.3px;
     }
-    .badge.zero { background: #ef4444; }
+
+    /* ── Phase chip in table ── */
+    .phase-chip {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    .phase-chip.p1 { background: var(--p1-soft); color: var(--p1); }
+    .phase-chip.p2 { background: var(--p2-soft); color: var(--p2); }
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
@@ -253,7 +283,7 @@
     thead tr { background: #f8f9fb; }
     thead th {
       text-align: left;
-      padding: 11px 20px;
+      padding: 11px 18px;
       font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -281,11 +311,13 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    tbody td { padding: 12px 20px; vertical-align: middle; }
+    tbody td { padding: 11px 18px; vertical-align: middle; }
 
     td.rank { color: #d4d8e2; font-size: 0.72rem; width: 36px; text-align: right; padding-right: 8px; font-weight: 500; }
     td.rack { font-weight: 700; color: #111; font-size: 0.9rem; }
-    td.desc { color: #555; font-size: 0.82rem; }
+    td.desc { color: #555; font-size: 0.82rem; max-width: 260px; }
+    td.boxno { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.8rem; color: #777; }
+    td.sku-col { font-family: 'SF Mono','Fira Code',monospace; color: var(--red); font-size: 0.82rem; font-weight: 600; }
 
     /* QTY chip */
     .qty-chip {
@@ -309,14 +341,6 @@
     }
     #emptyState .empty-icon { font-size: 2.6rem; margin-bottom: 12px; }
     #emptyState p { font-size: 0.88rem; }
-
-    /* ── Not found ── */
-    .not-found-row td {
-      color: #f87171;
-      font-style: italic;
-      background: #fff8f8 !important;
-      font-size: 0.83rem;
-    }
 
     /* ── Brand strip ── */
     .brand-strip {
@@ -367,37 +391,47 @@
 <header>
   <img class="vip-logo" src="https://udit2405.github.io/vipp/vip%20back%20logo.png" alt="VIP Industries">
   <div class="header-divider"></div>
-  <h1>MD-20 &nbsp;·&nbsp; Rack &amp; QTY Lookup</h1>
-  <span>Phase 1 &nbsp;·&nbsp; Internal Tool</span>
+  <h1>MD-20 &nbsp;·&nbsp; Phase 1 &amp; 2 &nbsp;|&nbsp; Rack &amp; QTY Lookup</h1>
+  <span>Internal Tool</span>
 </header>
 
 <!-- ── Main ── -->
 <div class="container">
 
-  <!-- Step 1 + Step 2 side by side -->
-  <div class="controls">
+  <!-- Upload row: Phase 1 + Phase 2 -->
+  <div class="upload-row">
 
-    <!-- Step 1: Upload -->
-    <div class="card">
-      <label><span class="step-badge">1</span> Upload Excel File</label>
-      <div class="upload-zone" id="uploadZone">
-        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    <!-- Phase 1 Upload -->
+    <div class="card p1-card">
+      <label><span class="step-badge">P1</span> Upload Phase 1 Excel</label>
+      <div class="upload-zone" id="uploadZone1">
+        <input type="file" id="fileInput1" accept=".xlsx,.xls" />
         <div class="icon">📂</div>
-        <p><strong>Click to upload</strong> or drag &amp; drop<br>Supports .xlsx / .xls</p>
+        <p><strong>Click to upload</strong> Phase 1 file<br><small>PIV Putaway Outward Stock Tracker</small></p>
       </div>
     </div>
 
-    <!-- Step 2: Search -->
-    <div class="card">
-      <label><span class="step-badge">2</span> Enter SKU or Material Description</label>
-      <textarea
-        id="queryInput"
-        placeholder="AIRSTN63TBL&#10;THETRUMDGRN&#10;Or paste multiple SKUs separated by spaces or new lines…"
-        spellcheck="false"
-      ></textarea>
-      <p class="hint">One per line — or paste multiple SKUs/descriptions separated by spaces. Each word/line is treated as a separate lookup.</p>
+    <!-- Phase 2 Upload -->
+    <div class="card p2-card">
+      <label><span class="step-badge">P2</span> Upload Phase 2 Excel</label>
+      <div class="upload-zone" id="uploadZone2">
+        <input type="file" id="fileInput2" accept=".xlsx,.xls" />
+        <div class="icon">📂</div>
+        <p><strong>Click to upload</strong> Phase 2 file<br><small>PIV Putaway Outward Stock Tracker</small></p>
+      </div>
     </div>
 
+  </div>
+
+  <!-- Search card: full width -->
+  <div class="card search-card">
+    <label><span class="step-badge" style="background:var(--red)">2</span> Enter SKU or Material Description</label>
+    <textarea
+      id="queryInput"
+      placeholder="AIRSTN63TBL&#10;THETRUMDGRN&#10;Or paste multiple SKUs separated by spaces or new lines…"
+      spellcheck="false"
+    ></textarea>
+    <p class="hint">One per line — or paste multiple SKUs/descriptions separated by spaces. Each token is a separate lookup across both phases.</p>
   </div>
 
   <!-- Action row -->
@@ -418,15 +452,17 @@
 
     <div id="emptyState">
       <div class="empty-icon">🏷️</div>
-      <p>Upload a file and enter a SKU or Material Description to see rack locations and quantities.</p>
+      <p>Upload Phase 1 and/or Phase 2 file, then enter a SKU or Material Description to see rack locations and quantities.</p>
     </div>
 
     <div class="table-wrap">
       <table id="resultsTable" style="display:none">
         <thead>
           <tr>
-            <th class="rank" style="width:36px">#</th>
+            <th style="width:36px">#</th>
+            <th>Phase</th>
             <th>Rack</th>
+            <th>Box No</th>
             <th>Material Description</th>
             <th>SKU</th>
             <th>QTY</th>
@@ -455,7 +491,7 @@
       <img src="https://udit2405.github.io/vipp/vip%20back%20logo.png" alt="VIP Industries">
       <div class="foot-brand-text">
         <div class="title">VIP Industries</div>
-        <span class="sub">MD-20 &nbsp;·&nbsp; Phase 1</span>
+        <span class="sub">MD-20 &nbsp;·&nbsp; Phase 1 &amp; 2</span>
       </div>
     </div>
     <div class="foot-author">
@@ -465,21 +501,27 @@
       <a href="mailto:udit.sahai@vipbags.com">udit.sahai@vipbags.com</a>
     </div>
   </div>
-  <div class="foot-bottom">© 2026 VIP Industries &nbsp;·&nbsp; Internal Use Only &nbsp;·&nbsp; Rack &amp; QTY Lookup — MD-20 Phase 1</div>
+  <div class="foot-bottom">© 2026 VIP Industries &nbsp;·&nbsp; Internal Use Only &nbsp;·&nbsp; Rack &amp; QTY Lookup — MD-20 Phase 1 &amp; 2</div>
 </footer>
 
 <script>
   /* ─── State ─── */
-  let allRows = [];   // parsed from excel: [{rack, sku, desc, qty}]
+  let phase1Rows = [];  // {rack, sku, desc, qty, boxNo, phase:'P1'}
+  let phase2Rows = [];  // {rack, sku, desc, qty, boxNo:'—', phase:'P2'}
 
-  /* ─── File upload ─── */
-  document.getElementById('fileInput').addEventListener('change', function () {
-    const file = this.files[0];
-    if (file) loadExcel(file);
+  /* ─── Phase 1 upload ─── */
+  document.getElementById('fileInput1').addEventListener('change', function () {
+    if (this.files[0]) loadExcel(this.files[0], 1);
   });
 
-  function loadExcel(file) {
-    const zone = document.getElementById('uploadZone');
+  /* ─── Phase 2 upload ─── */
+  document.getElementById('fileInput2').addEventListener('change', function () {
+    if (this.files[0]) loadExcel(this.files[0], 2);
+  });
+
+  function loadExcel(file, phase) {
+    const zoneId = phase === 1 ? 'uploadZone1' : 'uploadZone2';
+    const zone   = document.getElementById(zoneId);
     zone.querySelector('p').innerHTML = '⏳ Reading file…';
 
     const reader = new FileReader();
@@ -487,12 +529,16 @@
       try {
         const wb = XLSX.read(e.target.result, { type: 'array' });
 
-        // Try "Summary" sheet first, else fall back to first sheet
-        const sheetName = wb.SheetNames.includes('Summary') ? 'Summary' : wb.SheetNames[0];
-        const ws = wb.Sheets[sheetName];
+        // Phase 1 uses "Summary"; Phase 2 uses "SUMMURY" (typo in source file)
+        // Fall back: pick the sheet whose name contains "SUMM" (case-insensitive)
+        let sheetName = wb.SheetNames.find(s =>
+          s.toUpperCase().includes('SUMM')
+        ) || wb.SheetNames[0];
+
+        const ws   = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-        // Find the header row (look for a row that has "RACK" and "SKU")
+        // Find header row: must contain RACK and SKU
         let headerIdx = -1;
         for (let i = 0; i < Math.min(rows.length, 10); i++) {
           const r = rows[i].map(c => String(c).trim().toUpperCase());
@@ -502,40 +548,51 @@
           }
         }
         if (headerIdx === -1) {
-          zone.querySelector('p').innerHTML = '❌ Could not find header row (need RACK + SKU columns)';
+          zone.querySelector('p').innerHTML = '❌ Header row not found (need RACK + SKU columns)';
           return;
         }
 
         const headers = rows[headerIdx].map(c => String(c).trim().toUpperCase());
-        const colRack = headers.indexOf('RACK');
-        const colSku  = headers.findIndex(h => h === 'SKU' || h === 'SKU/EAN');
-        const colDesc = headers.findIndex(h => h.includes('MATERIAL') || h.includes('DESCRIPTION') || h === 'MATERIAL DESCRIPTION');
-        const colQty  = headers.indexOf('QTY');
+        const colRack  = headers.indexOf('RACK');
+        const colSku   = headers.findIndex(h => h === 'SKU' || h === 'SKU/EAN');
+        const colDesc  = headers.findIndex(h => h.includes('MATERIAL') || h.includes('DESCRIPTION'));
+        const colQty   = headers.indexOf('QTY');
+        // BOX NO is col H (index 7) — header may be "BOX NO", "BOX NUMBER", or "BOX NO."
+        const colBox   = headers.findIndex(h => h.includes('BOX'));
 
         if (colRack < 0 || colSku < 0 || colQty < 0) {
-          zone.querySelector('p').innerHTML = '❌ Missing expected columns (RACK / SKU / QTY)';
+          zone.querySelector('p').innerHTML = '❌ Missing columns (RACK / SKU / QTY)';
           return;
         }
 
-        // Parse data rows
-        allRows = [];
+        const parsed = [];
         for (let i = headerIdx + 1; i < rows.length; i++) {
-          const row = rows[i];
+          const row  = rows[i];
           const rack = String(row[colRack] || '').trim();
           const sku  = String(row[colSku]  || '').trim();
-          const desc = colDesc >= 0 ? String(row[colDesc] || '').trim() : '';
-          const qty  = parseFloat(row[colQty]) || 0;
-          if (rack && sku) {
-            allRows.push({ rack, sku, desc, qty });
-          }
+          if (!rack || !sku) continue;
+          const desc  = colDesc >= 0 ? String(row[colDesc] || '').trim() : '';
+          const qty   = parseFloat(row[colQty]) || 0;
+          const boxNo = (phase === 1 && colBox >= 0)
+                        ? String(row[colBox] || '').trim()
+                        : '—';
+          parsed.push({ rack, sku, desc, qty, boxNo, phase: 'P' + phase });
         }
 
+        if (phase === 1) phase1Rows = parsed;
+        else             phase2Rows = parsed;
+
+        const color = phase === 1 ? '#2563eb' : '#d97706';
         zone.querySelector('p').innerHTML =
-          `✅ <strong>${file.name}</strong><br>${allRows.length.toLocaleString()} rows loaded from "${sheetName}"`;
+          `✅ <strong style="color:${color}">${file.name}</strong><br>${parsed.length.toLocaleString()} rows · "${sheetName}"`;
         zone.classList.add('loaded');
-        document.getElementById('statusMsg').textContent = `${allRows.length.toLocaleString()} rows ready`;
+
+        const total = phase1Rows.length + phase2Rows.length;
+        document.getElementById('statusMsg').textContent =
+          `P1: ${phase1Rows.length.toLocaleString()} · P2: ${phase2Rows.length.toLocaleString()} rows ready`;
+
       } catch (err) {
-        zone.querySelector('p').innerHTML = '❌ Error reading file: ' + err.message;
+        zone.querySelector('p').innerHTML = '❌ Error: ' + err.message;
       }
     };
     reader.readAsArrayBuffer(file);
@@ -545,11 +602,12 @@
   document.getElementById('searchBtn').addEventListener('click', runSearch);
 
   function runSearch() {
-    const raw = document.getElementById('queryInput').value;
+    const raw       = document.getElementById('queryInput').value;
     const statusMsg = document.getElementById('statusMsg');
+    const allRows   = [...phase1Rows, ...phase2Rows];
 
     if (!allRows.length) {
-      statusMsg.textContent = '⚠️ Please upload an Excel file first.';
+      statusMsg.textContent = '⚠️ Please upload at least one Excel file first.';
       return;
     }
     if (!raw.trim()) {
@@ -557,17 +615,16 @@
       return;
     }
 
-    // Split on any whitespace (spaces, tabs, newlines) and drop empty tokens
-    const queries = raw.split(/\s+/).map(t => t.trim().toUpperCase()).filter(Boolean);
+    // Split on whitespace — each token is an independent lookup
+    const queries       = raw.split(/\s+/).map(t => t.trim().toUpperCase()).filter(Boolean);
     const uniqueQueries = [...new Set(queries)];
 
-    // For each token: exact SKU match OR substring description match
-    // Collect all matches (deduplicate by rack+sku combination)
-    const seen = new Set();
+    // Match: exact SKU OR substring in description; deduplicate by phase+rack+sku
+    const seen    = new Set();
     const matches = [];
     for (const q of uniqueQueries) {
       for (const r of allRows) {
-        const key = r.rack + '|' + r.sku;
+        const key = r.phase + '|' + r.rack + '|' + r.sku;
         if (seen.has(key)) continue;
         if (r.sku.toUpperCase() === q || r.desc.toUpperCase().includes(q)) {
           seen.add(key);
@@ -576,7 +633,7 @@
       }
     }
 
-    // Sort by QTY descending (max → min)
+    // Sort by QTY descending
     matches.sort((a, b) => b.qty - a.qty);
 
     renderTable(matches, uniqueQueries.join(', '));
@@ -591,21 +648,20 @@
     const termEl     = document.getElementById('searchedTerm');
 
     tbody.innerHTML = '';
-
     termEl.textContent = '"' + query + '"';
     termEl.style.display = 'inline';
 
     if (!matches.length) {
-      table.style.display = 'none';
+      table.style.display    = 'none';
       emptyState.style.display = 'block';
-      emptyState.querySelector('p').textContent = 'No results found for "' + query + '". Try a different SKU or description.';
+      emptyState.querySelector('p').textContent =
+        'No results found for "' + query + '". Try a different SKU or description.';
       badge.style.display = 'none';
       document.getElementById('copyBtn').style.display = 'none';
       document.getElementById('statusMsg').textContent = 'No match found.';
       return;
     }
 
-    // Max qty for chip coloring reference
     const maxQty = matches[0].qty;
 
     matches.forEach((item, i) => {
@@ -617,46 +673,51 @@
                      : qtyRatio >= 0.25 ? 'qty-med'
                      : 'qty-low';
 
+      const phaseClass = item.phase === 'P1' ? 'p1' : 'p2';
+
       tr.innerHTML = `
         <td class="rank">${i + 1}</td>
+        <td><span class="phase-chip ${phaseClass}">${esc(item.phase)}</span></td>
         <td class="rack">${esc(item.rack)}</td>
+        <td class="boxno">${esc(item.boxNo)}</td>
         <td class="desc">${esc(item.desc)}</td>
-        <td style="font-family:'SF Mono','Fira Code',monospace;color:var(--red);font-size:0.82rem;font-weight:600">${esc(item.sku)}</td>
+        <td class="sku-col">${esc(item.sku)}</td>
         <td><span class="qty-chip ${qtyClass}">${item.qty}</span></td>
       `;
       tbody.appendChild(tr);
     });
 
     emptyState.style.display = 'none';
-    table.style.display = 'table';
+    table.style.display      = 'table';
 
-    badge.style.display = 'inline-block';
-    badge.textContent = `${matches.length} rack${matches.length !== 1 ? 's' : ''} found`;
-    badge.className = 'badge';
+    badge.style.display  = 'inline-block';
+    badge.textContent    = `${matches.length} result${matches.length !== 1 ? 's' : ''} found`;
+    badge.className      = 'badge';
 
     document.getElementById('copyBtn').style.display = 'inline-block';
-    document.getElementById('statusMsg').textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''} · sorted by QTY ↓`;
+    document.getElementById('statusMsg').textContent =
+      `${matches.length} result${matches.length !== 1 ? 's' : ''} · sorted by QTY ↓`;
   }
 
   /* ─── Clear ─── */
   document.getElementById('clearBtn').addEventListener('click', () => {
     document.getElementById('queryInput').value = '';
     document.getElementById('resultsBody').innerHTML = '';
-    document.getElementById('resultsTable').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('resultsTable').style.display  = 'none';
+    document.getElementById('emptyState').style.display    = 'block';
     document.getElementById('emptyState').querySelector('p').textContent =
-      'Upload a file and enter a SKU or Material Description to see rack locations and quantities.';
-    document.getElementById('countBadge').style.display = 'none';
-    document.getElementById('copyBtn').style.display = 'none';
-    document.getElementById('searchedTerm').style.display = 'none';
-    document.getElementById('statusMsg').textContent = '';
+      'Upload Phase 1 and/or Phase 2 file, then enter a SKU or Material Description to see rack locations and quantities.';
+    document.getElementById('countBadge').style.display    = 'none';
+    document.getElementById('copyBtn').style.display       = 'none';
+    document.getElementById('searchedTerm').style.display  = 'none';
+    document.getElementById('statusMsg').textContent       = '';
   });
 
   /* ─── Copy ─── */
   document.getElementById('copyBtn').addEventListener('click', () => {
     const rows = document.querySelectorAll('#resultsBody tr');
     if (!rows.length) return;
-    const lines = ['#\tRACK\tMATERIAL DESCRIPTION\tSKU\tQTY'];
+    const lines = ['#\tPHASE\tRACK\tBOX NO\tMATERIAL DESCRIPTION\tSKU\tQTY'];
     rows.forEach(tr => {
       const cells = tr.querySelectorAll('td');
       lines.push([...cells].map(td => td.textContent.trim()).join('\t'));
