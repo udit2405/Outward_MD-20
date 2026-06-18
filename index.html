@@ -489,7 +489,7 @@
       placeholder="AIRSTN63TBL&#10;THETRUMDGRN&#10;Or paste multiple SKUs separated by spaces or new lines…"
       spellcheck="false"
     ></textarea>
-    <p class="hint">One per line — or paste multiple SKUs/descriptions separated by spaces. Each token is a separate lookup across both phases.</p>
+    <p class="hint">One entry per line. Multiple SKUs on one line can be space-separated. Full material descriptions must be on their own line for exact phrase matching.</p>
   </div>
 
   <!-- Action row -->
@@ -689,18 +689,32 @@
       return;
     }
 
-    // Split on whitespace — each token is an independent lookup
-    const queries       = raw.split(/\s+/).map(t => t.trim().toUpperCase()).filter(Boolean);
-    const uniqueQueries = [...new Set(queries)];
+    // Split by newlines → each line is one entry
+    // Within a line: each space-separated token is tried as an EXACT SKU match
+    //                the full line is tried as an EXACT PHRASE substring in description
+    // This prevents single-word tokens like "ARISTO" from matching unrelated descriptions
+    const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+    const uniqueLines = [...new Set(lines.map(l => l.toUpperCase()))];
 
-    // Match: exact SKU OR substring in description; deduplicate by phase+rack+sku
     const seen    = new Set();
     const matches = [];
-    for (const q of uniqueQueries) {
+
+    for (const line of uniqueLines) {
+      const tokens = line.split(/\s+/).filter(Boolean); // for SKU exact matching
+
       for (const r of allRows) {
         const key = r.phase + '|' + r.rack + '|' + r.sku;
         if (seen.has(key)) continue;
-        if (r.sku.toUpperCase() === q || r.desc.toUpperCase().includes(q)) {
+
+        const rSku  = r.sku.toUpperCase();
+        const rDesc = r.desc.toUpperCase();
+
+        // 1. Exact SKU match for any space-separated token on this line
+        const skuMatch = tokens.some(t => rSku === t);
+        // 2. Full line as exact phrase match in description
+        const descMatch = rDesc.includes(line);
+
+        if (skuMatch || descMatch) {
           seen.add(key);
           matches.push(r);
         }
@@ -710,7 +724,7 @@
     // Sort by QTY descending
     matches.sort((a, b) => b.qty - a.qty);
 
-    renderTable(matches, uniqueQueries.join(', '));
+    renderTable(matches, uniqueLines.join(', '));
   }
 
   /* ─── Render ─── */
