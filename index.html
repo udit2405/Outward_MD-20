@@ -236,7 +236,7 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
     }
 
-    #copyBtn {
+    #copyBtn, #printBtn {
       background: #fff;
       border: 1.5px solid #e2e5ed;
       border-radius: 8px;
@@ -246,11 +246,69 @@
       color: #666;
       cursor: pointer;
       transition: all .2s;
-      margin-left: auto;
       font-family: 'Inter', sans-serif;
     }
+    #copyBtn { margin-left: auto; }
     #copyBtn:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
     #copyBtn.copied { border-color: #22c55e; color: #166534; background: #f0fdf4; }
+    #printBtn:hover { border-color: #6366f1; color: #6366f1; background: rgba(99,102,241,.07); }
+
+    /* ── Print styles ── */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        position: fixed;
+        inset: 0;
+        background: #fff;
+        padding: 24px 32px;
+      }
+      #printArea h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #111;
+      }
+      #printArea .print-meta {
+        font-size: 0.72rem;
+        color: #888;
+        margin-bottom: 16px;
+      }
+      #printArea table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+      }
+      #printArea thead th {
+        background: #f0f2f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 7px 12px;
+        text-align: left;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #555;
+        border-bottom: 2px solid #ddd;
+      }
+      #printArea tbody td {
+        padding: 6px 12px;
+        border-bottom: 1px solid #eee;
+        vertical-align: middle;
+      }
+      #printArea tbody tr:nth-child(even) td {
+        background: #f9f9f9 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .qty-chip, .phase-chip {
+        border: 1px solid #ccc !important;
+        background: transparent !important;
+        color: #111 !important;
+        padding: 1px 6px !important;
+      }
+    }
 
     .badge {
       background: var(--red);
@@ -448,6 +506,7 @@
       <span id="searchedTerm" class="searched-term" style="display:none"></span>
       <span class="badge" id="countBadge" style="display:none"></span>
       <button id="copyBtn" style="display:none">⎘ &nbsp;Copy</button>
+      <button id="printBtn" style="display:none">🖨️ &nbsp;Print / Save</button>
     </div>
 
     <div id="emptyState">
@@ -473,6 +532,21 @@
     </div>
   </div>
 
+</div>
+
+<!-- Hidden print area (populated before window.print()) -->
+<div id="printArea" style="display:none">
+  <h2>MD-20 · Phase 1 &amp; 2 | Rack &amp; QTY Lookup</h2>
+  <div class="print-meta" id="printMeta"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Phase</th><th>Rack</th><th>Box No</th>
+        <th>Material Description</th><th>SKU</th><th>QTY</th>
+      </tr>
+    </thead>
+    <tbody id="printBody"></tbody>
+  </table>
 </div>
 
 <!-- Brand strip -->
@@ -657,8 +731,9 @@
       emptyState.querySelector('p').textContent =
         'No results found for "' + query + '". Try a different SKU or description.';
       badge.style.display = 'none';
-      document.getElementById('copyBtn').style.display = 'none';
-      document.getElementById('statusMsg').textContent = 'No match found.';
+      document.getElementById('copyBtn').style.display  = 'none';
+      document.getElementById('printBtn').style.display = 'none';
+      document.getElementById('statusMsg').textContent  = 'No match found.';
       return;
     }
 
@@ -694,7 +769,8 @@
     badge.textContent    = `${matches.length} result${matches.length !== 1 ? 's' : ''} found`;
     badge.className      = 'badge';
 
-    document.getElementById('copyBtn').style.display = 'inline-block';
+    document.getElementById('copyBtn').style.display  = 'inline-block';
+    document.getElementById('printBtn').style.display = 'inline-block';
     document.getElementById('statusMsg').textContent =
       `${matches.length} result${matches.length !== 1 ? 's' : ''} · sorted by QTY ↓`;
   }
@@ -709,8 +785,31 @@
       'Upload Phase 1 and/or Phase 2 file, then enter a SKU or Material Description to see rack locations and quantities.';
     document.getElementById('countBadge').style.display    = 'none';
     document.getElementById('copyBtn').style.display       = 'none';
+    document.getElementById('printBtn').style.display      = 'none';
     document.getElementById('searchedTerm').style.display  = 'none';
     document.getElementById('statusMsg').textContent       = '';
+  });
+
+  /* ─── Print ─── */
+  document.getElementById('printBtn').addEventListener('click', () => {
+    const srcRows = document.querySelectorAll('#resultsBody tr');
+    if (!srcRows.length) return;
+
+    const printBody = document.getElementById('printBody');
+    printBody.innerHTML = '';
+    srcRows.forEach(tr => {
+      const clone = tr.cloneNode(true);
+      printBody.appendChild(clone);
+    });
+
+    const term = document.getElementById('searchedTerm').textContent;
+    const count = document.getElementById('countBadge').textContent;
+    document.getElementById('printMeta').textContent =
+      `Search: ${term}  ·  ${count}  ·  Printed: ${new Date().toLocaleString()}`;
+
+    document.getElementById('printArea').style.display = 'block';
+    window.print();
+    document.getElementById('printArea').style.display = 'none';
   });
 
   /* ─── Copy ─── */
