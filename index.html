@@ -140,6 +140,24 @@
     .p1-card .upload-zone.loaded { border-color: var(--p1); background: #eff6ff; }
     .p2-card .upload-zone.loaded { border-color: var(--p2); background: #fffbeb; }
 
+    /* ── Remove file button ── */
+    .remove-btn {
+      display: none;
+      margin-top: 10px;
+      width: 100%;
+      background: #fff;
+      border: 1.5px solid #fca5a5;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #dc2626;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .remove-btn:hover { background: #fff5f5; border-color: #ef4444; }
+
     /* ── Search textarea ── */
     textarea {
       width: 100%;
@@ -467,6 +485,7 @@
         <div class="icon">📂</div>
         <p><strong>Click to upload</strong> Phase 1 file<br><small>PIV Putaway Outward Stock Tracker</small></p>
       </div>
+      <button class="remove-btn" id="removeBtn1" onclick="removeFile(1)">✕ &nbsp;Remove Phase 1 File</button>
     </div>
 
     <!-- Phase 2 Upload -->
@@ -477,6 +496,7 @@
         <div class="icon">📂</div>
         <p><strong>Click to upload</strong> Phase 2 file<br><small>PIV Putaway Outward Stock Tracker</small></p>
       </div>
+      <button class="remove-btn" id="removeBtn2" onclick="removeFile(2)">✕ &nbsp;Remove Phase 2 File</button>
     </div>
 
   </div>
@@ -583,6 +603,26 @@
   let phase1Rows = [];  // {rack, sku, desc, qty, boxNo, phase:'P1'}
   let phase2Rows = [];  // {rack, sku, desc, qty, boxNo:'—', phase:'P2'}
 
+  /* ─── Remove file ─── */
+  function removeFile(phase) {
+    if (phase === 1) phase1Rows = [];
+    else             phase2Rows = [];
+
+    const zone = document.getElementById('uploadZone' + phase);
+    zone.classList.remove('loaded');
+    zone.querySelector('p').innerHTML =
+      `<strong>Click to upload</strong> Phase ${phase} file<br><small>PIV Putaway Outward Stock Tracker</small>`;
+
+    // Reset the file input so the same file can be re-uploaded if needed
+    const input = document.getElementById('fileInput' + phase);
+    input.value = '';
+
+    document.getElementById('removeBtn' + phase).style.display = 'none';
+
+    document.getElementById('statusMsg').textContent =
+      `P1: ${phase1Rows.length.toLocaleString()} · P2: ${phase2Rows.length.toLocaleString()} rows ready`;
+  }
+
   /* ─── Phase 1 upload ─── */
   document.getElementById('fileInput1').addEventListener('change', function () {
     if (this.files[0]) loadExcel(this.files[0], 1);
@@ -660,8 +700,8 @@
         zone.querySelector('p').innerHTML =
           `✅ <strong style="color:${color}">${file.name}</strong><br>${parsed.length.toLocaleString()} rows · "${sheetName}"`;
         zone.classList.add('loaded');
+        document.getElementById('removeBtn' + phase).style.display = 'block';
 
-        const total = phase1Rows.length + phase2Rows.length;
         document.getElementById('statusMsg').textContent =
           `P1: ${phase1Rows.length.toLocaleString()} · P2: ${phase2Rows.length.toLocaleString()} rows ready`;
 
