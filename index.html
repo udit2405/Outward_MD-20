@@ -650,7 +650,7 @@
           const boxNo = (phase === 1 && colBox >= 0)
                         ? String(row[colBox] || '').trim()
                         : '—';
-          parsed.push({ rack, sku, desc, qty, boxNo, phase: 'P' + phase });
+          parsed.push({ id: parsed.length, rack, sku, desc, qty, boxNo, phase: 'P' + phase });
         }
 
         if (phase === 1) phase1Rows = parsed;
@@ -703,7 +703,7 @@
       const tokens = line.split(/\s+/).filter(Boolean); // for SKU exact matching
 
       for (const r of allRows) {
-        const key = r.phase + '|' + r.rack + '|' + r.sku;
+        const key = r.phase + '|' + r.id;
         if (seen.has(key)) continue;
 
         const rSku  = r.sku.toUpperCase();
