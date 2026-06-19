@@ -272,61 +272,6 @@
     #printBtn:hover { border-color: #6366f1; color: #6366f1; background: rgba(99,102,241,.07); }
 
     /* ── Print styles ── */
-    @media print {
-      body * { visibility: hidden; }
-      #printArea, #printArea * { visibility: visible; }
-      #printArea {
-        position: fixed;
-        inset: 0;
-        background: #fff;
-        padding: 24px 32px;
-      }
-      #printArea h2 {
-        font-size: 1rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-        color: #111;
-      }
-      #printArea .print-meta {
-        font-size: 0.72rem;
-        color: #888;
-        margin-bottom: 16px;
-      }
-      #printArea table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.8rem;
-      }
-      #printArea thead th {
-        background: #f0f2f5 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        padding: 7px 12px;
-        text-align: left;
-        font-size: 0.68rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: #555;
-        border-bottom: 2px solid #ddd;
-      }
-      #printArea tbody td {
-        padding: 6px 12px;
-        border-bottom: 1px solid #eee;
-        vertical-align: middle;
-      }
-      #printArea tbody tr:nth-child(even) td {
-        background: #f9f9f9 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      .qty-chip, .phase-chip {
-        border: 1px solid #ccc !important;
-        background: transparent !important;
-        color: #111 !important;
-        padding: 1px 6px !important;
-      }
-    }
 
     .badge {
       background: var(--red);
@@ -552,21 +497,6 @@
     </div>
   </div>
 
-</div>
-
-<!-- Hidden print area (populated before window.print()) -->
-<div id="printArea" style="display:none">
-  <h2>MD-20 · Phase 1 &amp; 2 | Rack &amp; QTY Lookup</h2>
-  <div class="print-meta" id="printMeta"></div>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>Phase</th><th>Rack</th><th>Box No</th>
-        <th>Material Description</th><th>SKU</th><th>QTY</th>
-      </tr>
-    </thead>
-    <tbody id="printBody"></tbody>
-  </table>
 </div>
 
 <!-- Brand strip -->
@@ -849,21 +779,45 @@
     const srcRows = document.querySelectorAll('#resultsBody tr');
     if (!srcRows.length) return;
 
-    const printBody = document.getElementById('printBody');
-    printBody.innerHTML = '';
-    srcRows.forEach(tr => {
-      const clone = tr.cloneNode(true);
-      printBody.appendChild(clone);
-    });
-
-    const term = document.getElementById('searchedTerm').textContent;
+    const term  = document.getElementById('searchedTerm').textContent;
     const count = document.getElementById('countBadge').textContent;
-    document.getElementById('printMeta').textContent =
-      `Search: ${term}  ·  ${count}  ·  Printed: ${new Date().toLocaleString()}`;
+    const date  = new Date().toLocaleString();
 
-    document.getElementById('printArea').style.display = 'block';
-    window.print();
-    document.getElementById('printArea').style.display = 'none';
+    let rowsHTML = '';
+    srcRows.forEach(tr => { rowsHTML += tr.outerHTML; });
+
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Print — MD-20 Rack &amp; QTY Lookup</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 24px 32px; color: #111; }
+  h2   { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  .meta { font-size: 0.72rem; color: #888; margin-bottom: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead th {
+    background: #f0f2f5; padding: 7px 12px; text-align: left;
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: #555; border-bottom: 2px solid #ddd;
+  }
+  tbody td { padding: 6px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tbody tr:nth-child(even) td { background: #f9f9f9; }
+  .phase-chip, .qty-chip {
+    border: 1px solid #bbb; border-radius: 20px;
+    padding: 1px 8px; font-size: 0.75rem; font-weight: 700;
+  }
+</style>
+</head><body>
+<h2>MD-20 · Phase 1 &amp; 2 | Rack &amp; QTY Lookup</h2>
+<div class="meta">Search: ${term} &nbsp;·&nbsp; ${count} &nbsp;·&nbsp; ${date}</div>
+<table>
+  <thead><tr><th>#</th><th>Phase</th><th>Rack</th><th>Box No</th><th>Material Description</th><th>SKU</th><th>QTY</th></tr></thead>
+  <tbody>${rowsHTML}</tbody>
+</table>
+<script>window.onload = function(){ window.print(); window.close(); }<\/script>
+</body></html>`);
+    win.document.close();
   });
 
   /* ─── Copy ─── */
