@@ -601,8 +601,8 @@
         const colSku   = headers.findIndex(h => h === 'SKU' || h === 'SKU/EAN');
         const colDesc  = headers.findIndex(h => h.includes('MATERIAL') || h.includes('DESCRIPTION'));
         const colQty   = headers.indexOf('QTY');
-        // BOX NO is col H (index 7) — header may be "BOX NO", "BOX NUMBER", or "BOX NO."
-        const colBox   = headers.findIndex(h => h.includes('BOX'));
+        // Match "BOX NO" exactly to avoid picking up "NO. OF BOX" or similar columns
+        const colBox   = headers.findIndex(h => h === 'BOX NO' || h === 'BOX NO.' || h === 'BOX NUMBER');
 
         if (colRack < 0 || colSku < 0 || colQty < 0) {
           zone.querySelector('p').innerHTML = '❌ Missing columns (RACK / SKU / QTY)';
